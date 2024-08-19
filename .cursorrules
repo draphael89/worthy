@@ -1,0 +1,110 @@
+@Project: Worthy AI - Media Buying Co-Pilot
+@Description: AI-powered optimization for Facebook ad campaigns using Next.js
+
+@TechStack:
+- Next.js 14.2.5
+- React 18.2.0
+- TypeScript
+- Tailwind CSS
+- Material-UI
+- Redux Toolkit
+- Firebase
+- OpenAI API
+
+@CodeStructure:
+- Use 'app' directory for routing and components
+- Separate concerns: components, contexts, utils, types
+- Follow Next.js App Router conventions
+
+@ComponentGuidelines:
+- Prefer functional components with hooks
+- Use 'use client' directive for client-side components
+- Implement error boundaries for robust error handling
+- Utilize dynamic imports for code splitting
+
+@RenderingStrategies:
+- Default to Server Components in 'app' directory
+- Use 'use client' directive for Client Components
+- Carefully manage client-side state to avoid hydration mismatches
+- Implement proper loading and error states for async operations
+
+@DataFetching:
+- Use Server Components for initial data fetching where possible
+- Implement SWR or React Query for client-side data fetching and caching
+- Handle loading and error states gracefully
+
+@StateManagement:
+- Use Redux Toolkit for global state management
+- Utilize React Context for theme and localized state
+- Implement custom hooks for reusable state logic
+
+@Styling:
+- Use Tailwind CSS for utility-first styling
+- Leverage Material-UI components for consistent UI elements
+- Implement responsive design using Tailwind's responsive classes
+
+@Performance:
+- Optimize images using Next.js Image component
+- Implement code splitting using dynamic imports
+- Use React.memo and useMemo for expensive computations
+- Optimize third-party library imports
+
+@Accessibility:
+- Ensure proper ARIA attributes on interactive elements
+- Implement keyboard navigation support
+- Use semantic HTML elements
+
+@Testing:
+- Write unit tests for utility functions and hooks
+- Implement integration tests for key user flows
+- Use React Testing Library for component tests
+
+@AIIntegration:
+- Securely manage OpenAI API keys using environment variables
+- Implement proper error handling for AI-related operations
+- Optimize AI request payloads for efficiency
+
+@Deployment:
+- Use Vercel for seamless Next.js deployments
+- Implement proper environment variable management
+- Use Next.js API routes for serverless functions
+
+@Security:
+- Implement proper authentication and authorization checks
+- Sanitize user inputs to prevent XSS attacks
+- Use Content Security Policy headers
+
+@CodeStyle:
+- Use ESLint with Next.js recommended rules
+- Implement Prettier for consistent code formatting
+- Use TypeScript's strict mode for type safety
+
+@Documentation:
+- Maintain up-to-date README.md with project setup instructions
+- Use JSDoc comments for complex functions and components
+- Keep inline comments concise and meaningful
+
+@VersionControl:
+- Use descriptive commit messages
+- Implement feature branching workflow
+- Conduct code reviews before merging to main branch
+
+@ErrorHandling:
+- Implement global error boundary in app/layout.tsx
+- Use try-catch blocks for async operations
+- Log errors to a monitoring service in production
+
+@Internationalization:
+- Implement next-intl for multi-language support
+- Use ICU message format for complex translations
+
+@Monitoring:
+- Implement logging for critical operations
+- Use Vercel Analytics for performance monitoring
+
+@AIGuidelines:
+- Prefer functional components with hooks
+- Use TypeScript for type safety
+- Implement proper error handling and logging
+- Optimize for performance and maintainability
+- Follow Next.js best practices for SSR and CSR
