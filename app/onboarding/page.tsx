@@ -1,35 +1,13 @@
-import { getServerSession } from 'next-auth/next';
-import { redirect } from 'next/navigation';
-import { FirebaseAuthService } from '@/services/FirebaseAuthService';
-import OnboardingContent from './OnboardingContent';
-import { authOptions } from '@/api/auth/[...nextauth]/options';
+import { Metadata } from 'next';
+import dynamic from 'next/dynamic';
 
-interface ExtendedUser {
-  id: string;
-  name?: string | null;
-  email?: string | null;
-  image?: string | null;
-  onboardingCompleted?: boolean;
-}
+const OnboardingContent = dynamic(() => import('./OnboardingContent'), { ssr: false });
 
-export default async function OnboardingWrapper() {
-  const session = await getServerSession(authOptions);
+export const metadata: Metadata = {
+  title: 'Onboarding | Worthy AI',
+  description: 'Complete your profile setup',
+};
 
-  if (!session) {
-    redirect('/login');
-  }
-
-  const user = session.user as ExtendedUser;
-
-  if (!user.id) {
-    redirect('/login');
-  }
-
-  const onboardingCompleted = await FirebaseAuthService.hasCompletedOnboarding(user.id);
-
-  if (onboardingCompleted) {
-    redirect('/dashboard');
-  }
-
+export default function OnboardingPage() {
   return <OnboardingContent />;
 }

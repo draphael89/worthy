@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { FirebaseAuthService } from './services/FirebaseAuthService';
+import { getAuth, sendEmailVerification } from 'firebase/auth';
 import styles from './EmailVerification.module.css';
 
 const EmailVerification: React.FC = () => {
@@ -12,8 +13,14 @@ const EmailVerification: React.FC = () => {
 
   const checkVerificationStatus = async () => {
     try {
-      const verified = await FirebaseAuthService.isEmailVerified();
-      setIsVerified(verified);
+      const auth = getAuth();
+      const user = auth.currentUser;
+      if (user) {
+        await user.reload(); // Refresh the user object
+        setIsVerified(user.emailVerified);
+      } else {
+        setError('No user is currently signed in');
+      }
     } catch (err) {
       setError('Failed to check verification status');
     }
@@ -21,8 +28,14 @@ const EmailVerification: React.FC = () => {
 
   const handleResendVerification = async () => {
     try {
-      await FirebaseAuthService.sendVerificationEmail();
-      setError('Verification email resent. Please check your inbox.');
+      const auth = getAuth();
+      const user = auth.currentUser;
+      if (user) {
+        await sendEmailVerification(user);
+        setError('Verification email resent. Please check your inbox.');
+      } else {
+        setError('No user is currently signed in');
+      }
     } catch (err) {
       setError('Failed to resend verification email. Please try again.');
     }

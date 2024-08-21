@@ -1,54 +1,78 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { FirebaseAuthService } from '@/services/FirebaseAuthService';
-import QuestionFlow from './components/QuestionFlow';
+import CoreOnboarding from './components/CoreOnboarding';
+import ExtendedOnboarding from './components/ExtendedOnboarding';
 import GradientBackground from './components/GradientBackground';
 import { motion, AnimatePresence } from 'framer-motion';
-
-export interface OnboardingFormValues {
-  companyName: string;
-  website: string;
-  industry: string;
-  adSpend: number;
-  adChannels: string[];
-  otherAdChannel?: string;
-  primaryGoal: string;
-  targetAudience: string;
-  audienceDescription: string;
-  mainKPI: string;
-  otherKPI?: string;
-  currentPerformance: string;
-  targetPerformance: string;
-  mainChallenge: string;
-  otherChallenge?: string;
-  primaryAdPlatform: string;
-  otherAdPlatform?: string;
-  primaryAnalyticsTool: string;
-  otherAnalyticsTool?: string;
-}
+import { getAuth } from 'firebase/auth';
+import { updateOnboardingStatus } from '../actions/auth';
+import { OnboardingFormValues } from './types';
+import { User } from 'firebase/auth';
 
 const OnboardingContent: React.FC = () => {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
+  const [onboardingData, setOnboardingData] = useState<Partial<OnboardingFormValues>>({});
+  const [onboardingStage, setOnboardingStage] = useState<'core' | 'extended'>('core');
 
-  const handleSubmit = async (values: OnboardingFormValues) => {
+  useEffect(() => {
+    const auth = getAuth();
+    setUser(auth.currentUser);
+    if (auth.currentUser) {
+      FirebaseAuthService.getUserProfile(auth.currentUser.uid)
+        .then((profile: Partial<OnboardingFormValues> | null) => {
+          if (profile) {
+            setOnboardingData(profile);
+            if ('coreOnboardingCompleted' in profile && profile.coreOnboardingCompleted) {
+              setOnboardingStage('extended');
+            }
+          }
+        })
+        .catch((error: Error) => {
+          console.error('Error fetching user profile:', error);
+        });
+    }
+  }, []);
+
+  const handleCoreSubmit = async (values: Partial<OnboardingFormValues>) => {
     setIsSubmitting(true);
     setError(null);
 
     try {
-      const result = await FirebaseAuthService.saveOnboardingData(values.companyName, values);
-      
-      if (result.success) {
-        await FirebaseAuthService.updateOnboardingStatus(values.companyName, true);
-        router.push('/dashboard');
-      } else {
-        setError(result.error || 'An error occurred while saving onboarding data');
+      if (!user) {
+        throw new Error('No authenticated user found');
       }
+
+      await FirebaseAuthService.updateUserProfile(user.uid, { ...values, coreOnboardingCompleted: true });
+      setOnboardingData(prevData => ({ ...prevData, ...values, coreOnboardingCompleted: true }));
+      setOnboardingStage('extended');
     } catch (error) {
-      console.error('Error submitting onboarding form:', error);
+      console.error('Error submitting core onboarding:', error);
+      setError('An unexpected error occurred. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleExtendedSubmit = async (values: Partial<OnboardingFormValues>) => {
+    setIsSubmitting(true);
+    setError(null);
+
+    try {
+      if (!user) {
+        throw new Error('No authenticated user found');
+      }
+
+      await FirebaseAuthService.updateUserProfile(user.uid, { ...values, extendedOnboardingCompleted: true });
+      await updateOnboardingStatus(user.uid, true);
+      router.push('/dashboard');
+    } catch (error) {
+      console.error('Error submitting extended onboarding:', error);
       setError('An unexpected error occurred. Please try again.');
     } finally {
       setIsSubmitting(false);
@@ -57,32 +81,40 @@ const OnboardingContent: React.FC = () => {
 
   return (
     <GradientBackground>
-      <AnimatePresence>
-        {error && (
-          <motion.div
-            initial={{ opacity: 0, y: -50 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -50 }}
-            className="absolute top-0 left-0 right-0 bg-red-100 border-b border-red-400 text-red-700 px-4 py-3 z-50"
-            role="alert"
-          >
-            <span className="block sm:inline">{error}</span>
-            <span className="absolute top-0 bottom-0 right-0 px-4 py-3">
-              <svg
-                className="fill-current h-6 w-6 text-red-500"
-                role="button"
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 20 20"
-                onClick={() => setError(null)}
+      <div className="min-h-screen flex flex-col justify-center items-center px-4 sm:px-6 lg:px-8">
+        <div className="w-full max-w-md">
+          <h1 className="text-3xl font-bold text-center text-gray-900 mb-8">
+            Welcome to Worthy AI
+          </h1>
+          <AnimatePresence>
+            {error && (
+              <motion.div
+                initial={{ opacity: 0, y: -50 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -50 }}
+                className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4"
+                role="alert"
               >
-                <title>Close</title>
-                <path d="M14.348 14.849a1.2 1.2 0 0 1-1.697 0L10 11.819l-2.651 3.029a1.2 1.2 0 1 1-1.697-1.697l2.758-3.15-2.759-3.152a1.2 1.2 0 1 1 1.697-1.697L10 8.183l2.651-3.031a1.2 1.2 0 1 1 1.697 1.697l-2.758 3.152 2.758 3.15a1.2 1.2 0 0 1 0 1.698z" />
-              </svg>
-            </span>
-          </motion.div>
-        )}
-      </AnimatePresence>
-      <QuestionFlow onSubmit={handleSubmit} isSubmitting={isSubmitting} />
+                <p className="font-bold">Error</p>
+                <p>{error}</p>
+              </motion.div>
+            )}
+          </AnimatePresence>
+          {onboardingStage === 'core' ? (
+            <CoreOnboarding 
+              onSubmit={handleCoreSubmit} 
+              isSubmitting={isSubmitting} 
+              initialValues={onboardingData}
+            />
+          ) : (
+            <ExtendedOnboarding 
+              onSubmit={handleExtendedSubmit} 
+              isSubmitting={isSubmitting} 
+              initialValues={onboardingData}
+            />
+          )}
+        </div>
+      </div>
     </GradientBackground>
   );
 };

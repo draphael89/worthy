@@ -2,16 +2,12 @@
 
 import { z } from 'zod';
 import { FirebaseAuthService } from '@/services/FirebaseAuthService';
-import { doc, setDoc } from 'firebase/firestore';
-import { db } from 'app/firebase/firebaseConfig';
 
-// Define a schema for input validation
 const authSchema = z.object({
   email: z.string().email('Invalid email address'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
 });
 
-// Define the shape of the form state
 export type FormState = {
   message: string | null;
   success: boolean;
@@ -19,17 +15,10 @@ export type FormState = {
   onboardingCompleted?: boolean;
 };
 
-// Custom logger function that works on both client and server
 const log = (message: string, data?: any) => {
   console.log(`[Auth Action] ${message}`, data ? JSON.stringify(data) : '');
 };
 
-/**
- * Authenticate a user with email and password
- * @param prevState - The previous form state
- * @param formData - The form data containing email and password
- * @returns FormState with the result of the authentication attempt
- */
 export async function authenticate(prevState: FormState, formData: FormData): Promise<FormState> {
   log('Starting authentication process');
 
@@ -50,16 +39,14 @@ export async function authenticate(prevState: FormState, formData: FormData): Pr
 
   try {
     log('Attempting to authenticate user with Firebase');
-    const userCredential = await FirebaseAuthService.signInWithEmailAndPassword(email, password);
-    log('Firebase authentication successful', { userId: userCredential.user.uid });
-
-    const onboardingCompleted = await FirebaseAuthService.hasCompletedOnboarding(userCredential.user.uid);
-    log('Onboarding status checked', { onboardingCompleted });
+    const user = await FirebaseAuthService.signInWithEmailAndPassword(email, password);
+    const onboardingCompleted = await FirebaseAuthService.hasCompletedOnboarding(user.uid);
+    log('Firebase authentication successful', { userId: user.uid, onboardingCompleted });
 
     return {
       message: 'Authentication successful',
       success: true,
-      userId: userCredential.user.uid,
+      userId: user.uid,
       onboardingCompleted,
     };
   } catch (error) {
@@ -71,12 +58,6 @@ export async function authenticate(prevState: FormState, formData: FormData): Pr
   }
 }
 
-/**
- * Sign up a new user with email and password
- * @param prevState - The previous form state
- * @param formData - The form data containing email and password
- * @returns FormState with the result of the sign-up attempt
- */
 export async function signUp(prevState: FormState, formData: FormData): Promise<FormState> {
   log('Starting sign-up process');
 
@@ -97,22 +78,15 @@ export async function signUp(prevState: FormState, formData: FormData): Promise<
 
   try {
     log('Attempting to create user with Firebase');
-    const userCredential = await FirebaseAuthService.signUpWithEmailAndPassword(email, password);
-    log('User created successfully', { userId: userCredential.user.uid });
-    
-    const userRef = doc(db, 'users', userCredential.user.uid);
-    await setDoc(userRef, {
-      email: email,
-      onboardingCompleted: false,
-      createdAt: new Date(),
-    });
-    log('User document created in Firestore');
+    const user = await FirebaseAuthService.signUpWithEmailAndPassword(email, password);
+    await FirebaseAuthService.createUserInDatabase(user);
+    log('User created successfully', { userId: user.uid });
 
     return {
       message: 'Sign up successful',
       success: true,
-      userId: userCredential.user.uid,
-      onboardingCompleted: false,
+      userId: user.uid,
+      onboardingCompleted: false, // Always set this to false for new users
     };
   } catch (error) {
     log('Error signing up', error);
@@ -123,11 +97,6 @@ export async function signUp(prevState: FormState, formData: FormData): Promise<
   }
 }
 
-/**
- * Check if a user has completed onboarding
- * @param userId - The user's ID
- * @returns A boolean indicating whether the user has completed onboarding
- */
 export async function hasCompletedOnboarding(userId: string): Promise<boolean> {
   log('Checking onboarding status', { userId });
   try {
@@ -140,12 +109,6 @@ export async function hasCompletedOnboarding(userId: string): Promise<boolean> {
   }
 }
 
-/**
- * Update the user's onboarding status
- * @param userId - The user's ID
- * @param status - The new onboarding status
- * @returns A boolean indicating whether the update was successful
- */
 export async function updateOnboardingStatus(userId: string, status: boolean): Promise<boolean> {
   log('Updating onboarding status', { userId, status });
   try {

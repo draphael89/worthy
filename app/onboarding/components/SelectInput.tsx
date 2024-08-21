@@ -1,6 +1,7 @@
 import React, { useCallback, useRef, useEffect } from 'react';
 import { useField, useFormikContext } from 'formik';
 import { motion, AnimatePresence } from 'framer-motion';
+import { ChevronDownIcon } from '@heroicons/react/solid';
 
 interface SelectInputProps {
   name: string;
@@ -36,29 +37,23 @@ const SelectInput: React.FC<SelectInputProps> = ({ name, label, options, onSubmi
   }, [name, setFieldValue, setFieldTouched]);
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -20 }}
-      transition={{ duration: 0.5 }}
-      className="flex flex-col justify-center min-h-screen px-4 sm:px-6 lg:px-8"
-    >
-      <label htmlFor={name} className="text-3xl sm:text-4xl font-semibold mb-4 text-gray-800">
+    <div className="space-y-4">
+      <label htmlFor={name} className="block text-2xl font-semibold text-gray-800">
         {label}
       </label>
       <motion.div
         whileHover={{ scale: 1.02 }}
         whileTap={{ scale: 0.98 }}
+        className="relative"
       >
         <select
           ref={selectRef}
           {...field}
           onChange={handleChange}
           onKeyDown={handleKeyDown}
-          className={`w-full px-4 py-3 text-xl sm:text-2xl border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-300 ${
+          className={`w-full px-4 py-3 text-lg border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-300 appearance-none bg-white ${
             meta.touched && meta.error ? 'border-red-500' : ''
           }`}
-          style={{ WebkitAppearance: 'none', MozAppearance: 'none', appearance: 'none' }}
           aria-label={label}
           aria-describedby={`${name}-error`}
         >
@@ -69,6 +64,7 @@ const SelectInput: React.FC<SelectInputProps> = ({ name, label, options, onSubmi
             </option>
           ))}
         </select>
+        <ChevronDownIcon className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
       </motion.div>
       <AnimatePresence>
         {meta.touched && meta.error && (
@@ -78,27 +74,16 @@ const SelectInput: React.FC<SelectInputProps> = ({ name, label, options, onSubmi
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.2 }}
-            className="text-red-500 mt-2 text-lg"
+            className="text-red-500 text-sm"
           >
             {meta.error}
           </motion.div>
         )}
       </AnimatePresence>
-      <div className="flex justify-between items-center mt-4">
-        <div className="text-sm text-gray-600">
-          Press Enter for {isLastQuestion ? 'submit' : 'next'}, Ctrl + ↑ for previous
-        </div>
-        <motion.button
-          type="button"
-          onClick={onSubmit}
-          className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-500"
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-        >
-          {isLastQuestion ? 'Submit' : 'Next'}
-        </motion.button>
+      <div className="text-sm text-gray-600">
+        Press Enter to {isLastQuestion ? 'submit' : 'continue'}
       </div>
-    </motion.div>
+    </div>
   );
 };
 

@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useSession } from 'next-auth/react';
 import Dashboard from './Dashboard';
 import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
@@ -10,26 +9,32 @@ import { createTheme } from '@mui/material/styles';
 import { ThemeType, lightTheme, darkTheme, toggleTheme } from '../styles/theme';
 import LoadingSpinner from './LoadingSpinner';
 import { FirebaseAuthService } from '../services/FirebaseAuthService';
+import { getAuth, onAuthStateChanged, User } from 'firebase/auth';
 
 export default function DashboardWrapper() {
   const [currentTheme, setCurrentTheme] = useState<ThemeType>(lightTheme);
+  const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState<User | null>(null);
   const router = useRouter();
-  const { data: session, status } = useSession();
 
   useEffect(() => {
-    const checkAuthAndOnboarding = async () => {
-      if (status === 'authenticated' && session?.user?.email) {
-        const onboardingCompleted = await FirebaseAuthService.hasCompletedOnboarding(session.user.email);
+    const auth = getAuth();
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      setLoading(true);
+      if (firebaseUser) {
+        setUser(firebaseUser);
+        const onboardingCompleted = await FirebaseAuthService.hasCompletedOnboarding(firebaseUser.uid);
         if (!onboardingCompleted) {
           router.push('/onboarding');
         }
-      } else if (status === 'unauthenticated') {
+      } else {
         router.push('/login');
       }
-    };
+      setLoading(false);
+    });
 
-    checkAuthAndOnboarding();
-  }, [status, session, router]);
+    return () => unsubscribe();
+  }, [router]);
 
   const handleToggleTheme = () => {
     setCurrentTheme((prevTheme) => toggleTheme(prevTheme));
@@ -58,11 +63,11 @@ export default function DashboardWrapper() {
     },
   });
 
-  if (status === 'loading') {
+  if (loading) {
     return <LoadingSpinner />;
   }
 
-  if (!session) {
+  if (!user) {
     return null;
   }
 

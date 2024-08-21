@@ -1,5 +1,5 @@
 import { initializeApp, FirebaseApp } from 'firebase/app';
-import { getAuth, Auth } from 'firebase/auth';
+import { getAuth, Auth, GoogleAuthProvider } from 'firebase/auth';
 import { getFirestore, Firestore } from 'firebase/firestore';
 import { getStorage, FirebaseStorage } from 'firebase/storage';
 import { getAnalytics, Analytics } from 'firebase/analytics';
@@ -19,12 +19,14 @@ let auth: Auth;
 let db: Firestore;
 let storage: FirebaseStorage;
 let analytics: Analytics | undefined;
+let googleProvider: GoogleAuthProvider;
 
 try {
   app = initializeApp(firebaseConfig);
   auth = getAuth(app);
   db = getFirestore(app);
   storage = getStorage(app);
+  googleProvider = new GoogleAuthProvider();
 
   if (typeof window !== 'undefined' && process.env.NODE_ENV !== 'test') {
     analytics = getAnalytics(app);
@@ -36,4 +38,4 @@ try {
   throw error;
 }
 
-export { app, auth, db, storage, analytics };
+export { app, auth, db, storage, analytics, googleProvider };

@@ -1,49 +1,61 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useSession } from 'next-auth/react';
+import { onAuthStateChanged, User } from 'firebase/auth';
+import { doc, getDoc } from 'firebase/firestore';
+import { auth, db } from '../firebase/firebaseConfig'; // Adjust the import path as needed
 
-// Define a custom type for the session user
-interface CustomUser {
-  name?: string | null;
-  email?: string | null;
-  image?: string | null;
+// Define a custom type for the user
+interface CustomUser extends User {
   onboardingCompleted?: boolean;
 }
 
 const DashboardContent: React.FC = () => {
   const router = useRouter();
-  const { data: session, status } = useSession({
-    required: true,
-    onUnauthenticated() {
-      router.push('/login');
-    },
-  });
+  const [user, setUser] = useState<CustomUser | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (status === 'authenticated' && session?.user) {
-      const user = session.user as CustomUser;
-      if (user.onboardingCompleted === false) {
-        router.push('/onboarding');
-      }
-    }
-  }, [status, session, router]);
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      if (firebaseUser) {
+        // User is signed in
+        const userDocRef = doc(db, 'users', firebaseUser.uid);
+        const userDoc = await getDoc(userDocRef);
+        const userData = userDoc.data();
 
-  if (status === 'loading') {
+        setUser({
+          ...firebaseUser,
+          onboardingCompleted: userData?.onboardingCompleted ?? false,
+        });
+
+        if (!userData?.onboardingCompleted) {
+          router.push('/onboarding');
+        }
+      } else {
+        // User is signed out
+        setUser(null);
+        router.push('/login');
+      }
+      setLoading(false);
+    });
+
+    // Cleanup subscription on unmount
+    return () => unsubscribe();
+  }, [router]);
+
+  if (loading) {
     return <div>Loading...</div>;
   }
 
-  if (!session?.user) {
+  if (!user) {
     return null;
   }
-
-  const user = session.user as CustomUser;
 
   return (
     <div>
       <h1>Welcome to your Dashboard</h1>
-      <p>Hello, {user.name || 'User'}!</p>
+      <p>Hello, {user.displayName || user.email || 'User'}!</p>
       {/* Add your dashboard content here */}
     </div>
   );

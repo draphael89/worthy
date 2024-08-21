@@ -35,7 +35,8 @@
     "src/**/*.ts",
     "src/**/*.tsx",
     "app/**/*.ts",
-    "app/**/*.tsx"
+    "app/**/*.tsx",
+    "heroicons.d.ts"
   ],
   "exclude": ["node_modules"]
 }

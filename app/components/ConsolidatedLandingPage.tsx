@@ -2,7 +2,6 @@
 
 import React, { useCallback, lazy, Suspense, useEffect, useState, useMemo } from 'react';
 import { useTheme } from 'app/contexts/ThemeContext';
-import { useSession, signOut, SessionProvider } from "next-auth/react";
 import ErrorBoundary from '../ErrorBoundary';
 import dynamic from 'next/dynamic';
 import SkeletonLoader from '../SkeletonLoader';
@@ -13,6 +12,7 @@ import { Element, Events, scroller } from 'react-scroll';
 import { useSwipeable } from 'react-swipeable';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { FirebaseAuthService } from '../services/FirebaseAuthService';
 
 const SEOMetaTags = dynamic(() => import('../SEOMetaTags'), { ssr: false });
 
@@ -89,16 +89,25 @@ SectionWrapper.displayName = 'SectionWrapper';
 
 const ConsolidatedLandingPageContent: React.FC = () => {
   const { theme, toggleTheme } = useTheme();
-  const { data: session, status } = useSession();
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [activeSection, setActiveSection] = useState(0);
   const router = useRouter();
 
+  useEffect(() => {
+    const checkAuthStatus = async () => {
+      const user = await FirebaseAuthService.getCurrentUser();
+      setIsAuthenticated(!!user);
+    };
+    checkAuthStatus();
+  }, []);
+
   const handleSignIn = useCallback(() => {
-    router.push('/login');
+    router.push('/signin');
   }, [router]);
 
   const handleSignOut = useCallback(async () => {
-    await signOut({ redirect: false });
+    await FirebaseAuthService.signOut();
+    setIsAuthenticated(false);
     router.push('/');
   }, [router]);
 
@@ -186,7 +195,7 @@ const ConsolidatedLandingPageContent: React.FC = () => {
         >
           {theme.darkMode ? '🌞' : '🌙'}
         </button>
-        {status === "authenticated" ? (
+        {isAuthenticated ? (
           <button
             onClick={handleSignOut}
             className="fixed top-4 right-4 bg-red-500 text-white p-2 rounded shadow-lg transition-colors duration-200 ease-in-out hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 z-50"
@@ -194,7 +203,7 @@ const ConsolidatedLandingPageContent: React.FC = () => {
             Sign Out
           </button>
         ) : (
-          <Link href="/login">
+          <Link href="/signin">
             <button
               className="fixed top-4 right-4 bg-blue-500 text-white p-2 rounded shadow-lg transition-colors duration-200 ease-in-out hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 z-50"
             >
@@ -208,11 +217,7 @@ const ConsolidatedLandingPageContent: React.FC = () => {
 };
 
 const ConsolidatedLandingPage: React.FC = () => {
-  return (
-    <SessionProvider>
-      <ConsolidatedLandingPageContent />
-    </SessionProvider>
-  );
+  return <ConsolidatedLandingPageContent />;
 };
 
 export default React.memo(ConsolidatedLandingPage);

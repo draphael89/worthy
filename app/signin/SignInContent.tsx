@@ -1,18 +1,10 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { useFormState } from 'react-dom';
-import { authenticate, FormState } from '../actions/auth';
 import styles from './SignIn.module.css';
-import { signIn } from 'next-auth/react';
-
-// Initial state for the form
-const initialState: FormState = {
-  message: null,
-  success: false,
-};
+import { FirebaseAuthService } from '../services/FirebaseAuthService';
 
 // Custom logger for client-side logging
 const log = (message: string, data?: any) => {
@@ -21,51 +13,29 @@ const log = (message: string, data?: any) => {
 
 const SignInContent: React.FC = () => {
   const router = useRouter();
-  // Use useFormState to handle form submission and state updates
-  const [state, formAction] = useFormState(authenticate, initialState);
+  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
-  // Effect to handle successful authentication
-  React.useEffect(() => {
-    if (state.success) {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setIsLoading(true);
+    setError(null);
+
+    const formData = new FormData(event.currentTarget);
+    const email = formData.get('email') as string;
+    const password = formData.get('password') as string;
+
+    log('Form submitted, attempting to sign in');
+
+    try {
+      const user = await FirebaseAuthService.signInWithEmailAndPassword(email, password);
       log('Authentication successful, redirecting to dashboard');
       router.push('/dashboard');
-    }
-  }, [state.success, router]);
-
-  // Handle form submission
-  const handleSubmit = async (formData: FormData) => {
-    log('Form submitted, calling authenticate action');
-    await formAction(formData);
-    
-    // If server-side authentication was successful, perform client-side sign-in
-    if (state.success) {
-      log('Server-side authentication successful, performing client-side sign-in');
-      try {
-        const signInResult = await signIn('credentials', {
-          redirect: false,
-          email: formData.get('email') as string,
-          password: formData.get('password') as string,
-        });
-
-        if (signInResult?.error) {
-          log('Client-side sign-in failed', signInResult.error);
-          // Update state with error message
-          return {
-            message: 'Failed to complete sign-in process. Please try again.',
-            success: false,
-          };
-        }
-
-        log('Client-side sign-in successful');
-        // The useEffect will handle redirection
-      } catch (error) {
-        log('Error during client-side sign-in', error);
-        // Update state with error message
-        return {
-          message: 'An unexpected error occurred during sign-in. Please try again.',
-          success: false,
-        };
-      }
+    } catch (error) {
+      log('Authentication failed', error);
+      setError('Invalid email or password. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -73,7 +43,7 @@ const SignInContent: React.FC = () => {
     <div className={styles.signInPage}>
       <div className={styles.formContainer}>
         <h1 className={styles.formTitle}>Sign In</h1>
-        <form action={formAction} className={styles.form}>
+        <form onSubmit={handleSubmit} className={styles.form}>
           <div className={styles.formGroup}>
             <label htmlFor="email" className={styles.label}>Email</label>
             <input
@@ -96,20 +66,21 @@ const SignInContent: React.FC = () => {
               aria-describedby="password-error"
             />
           </div>
-          {state.message && (
+          {error && (
             <p 
-              className={state.success ? styles.success : styles.error}
-              id={state.success ? 'form-success' : 'form-error'}
+              className={styles.error}
+              id="form-error"
               aria-live="polite"
             >
-              {state.message}
+              {error}
             </p>
           )}
           <button
             type="submit"
             className={styles.submitButton}
+            disabled={isLoading}
           >
-            Sign In
+            {isLoading ? 'Signing In...' : 'Sign In'}
           </button>
         </form>
         <p className={styles.signUpLink}>
