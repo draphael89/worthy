@@ -1,4 +1,5 @@
-import { Card, CardContent, Box } from '@mui/material';
+import React from 'react';
+import { Box, Typography, Grid } from '@mui/material';
 import { 
   AmountSpentChart, 
   CPMChart, 
@@ -7,28 +8,43 @@ import {
   CostPerPurchaseChart 
 } from './Charts';
 import ViewModeSelector from './ViewModeSelector';
-import { useDashboardContext } from './Dashboard';
+import { DateRange, ViewMode } from '../types/AdData';
 
-const ChartsContainer = () => {
-  const { viewMode, setViewMode, dateRange } = useDashboardContext();
+interface ChartsContainerProps {
+  dateRange: DateRange;
+  viewMode: ViewMode;
+  onViewModeChange: (mode: ViewMode) => void;
+}
 
-  const handleViewModeChange = (newMode: 'daily' | 'weekly' | 'monthly') => {
-    setViewMode(newMode);
-  };
-
+const ChartsContainer: React.FC<ChartsContainerProps> = ({ 
+  dateRange, 
+  viewMode, 
+  onViewModeChange 
+}) => {
   return (
-    <Card>
-      <CardContent>
-        <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-          <ViewModeSelector viewMode={viewMode} onViewModeChange={handleViewModeChange} />
-        </Box>
-        <AmountSpentChart dateRange={dateRange} viewMode={viewMode} />
-        <CPMChart dateRange={dateRange} viewMode={viewMode} />
-        <CTRChart dateRange={dateRange} viewMode={viewMode} />
-        <CostPerLinkClickChart dateRange={dateRange} viewMode={viewMode} />
-        <CostPerPurchaseChart dateRange={dateRange} viewMode={viewMode} />
-      </CardContent>
-    </Card>
+    <Box>
+      <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+        <Typography variant="h6">Performance Metrics</Typography>
+        <ViewModeSelector viewMode={viewMode} onViewModeChange={onViewModeChange} />
+      </Box>
+      <Grid container spacing={3}>
+        <Grid item xs={12} md={6}>
+          <AmountSpentChart dateRange={dateRange} viewMode={viewMode} />
+        </Grid>
+        <Grid item xs={12} md={6}>
+          <CPMChart dateRange={dateRange} viewMode={viewMode} />
+        </Grid>
+        <Grid item xs={12} md={6}>
+          <CTRChart dateRange={dateRange} viewMode={viewMode} />
+        </Grid>
+        <Grid item xs={12} md={6}>
+          <CostPerLinkClickChart dateRange={dateRange} viewMode={viewMode} />
+        </Grid>
+        <Grid item xs={12}>
+          <CostPerPurchaseChart dateRange={dateRange} viewMode={viewMode} />
+        </Grid>
+      </Grid>
+    </Box>
   );
 };
 

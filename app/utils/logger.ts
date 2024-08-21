@@ -74,3 +74,7 @@ export const logInfo = logger.info.bind(logger);
 export const logWarn = logger.warn.bind(logger);
 export const logError = logger.error.bind(logger);
 export const logDebug = logger.debug.bind(logger);
+
+export const log = (component: string, message: string, data?: any) => {
+  console.log(`[${component}] ${message}`, data ? JSON.stringify(data, null, 2) : '');
+};

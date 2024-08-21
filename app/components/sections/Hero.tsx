@@ -9,10 +9,6 @@ import Link from 'next/link';
 import Image from 'next/image';
 import NeuralBackgroundAnimation from '../NeuralBackgroundAnimation';
 
-interface HeroProps {
-  handleSignIn?: () => Promise<void>;
-}
-
 const textVariants: Variants = {
   hidden: { opacity: 0, y: -20 },
   visible: (custom: number) => ({
@@ -45,44 +41,7 @@ const StartOptimizingButton: React.FC = () => {
   );
 };
 
-const EnhancedGoogleButton: React.FC = () => {
-  useEffect(() => {
-    const script = document.createElement('script');
-    script.src = "https://apis.google.com/js/platform.js?onload=renderButton";
-    script.async = true;
-    script.defer = true;
-    document.body.appendChild(script);
-
-    (window as any).renderButton = () => {
-      (window as any).gapi.signin2.render('my-signin2', {
-        scope: 'profile email',
-        width: 240,
-        height: 50,
-        longtitle: true,
-        theme: 'dark',
-        client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID, // Add this line
-      });
-    };
-
-    return () => {
-      document.body.removeChild(script);
-    };
-  }, []);
-
-  return (
-    <div
-      id="my-signin2"
-      className="inline-block"
-      style={{
-        boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
-        borderRadius: '8px',
-        overflow: 'hidden',
-      }}
-    />
-  );
-};
-
-const Hero: React.FC<HeroProps> = () => {
+const Hero: React.FC = () => {
   const [isLoaded, setIsLoaded] = useState(false);
   const controls = useAnimation();
   const [ref, inView] = useInView({
@@ -103,7 +62,7 @@ const Hero: React.FC<HeroProps> = () => {
         <NeuralBackgroundAnimation />
       </Canvas>
       <div className="absolute inset-0 opacity-10">
-        <Image src="/subtle-pattern.png" alt="Subtle pattern" layout="fill" objectFit="cover" />
+        <Image src="/subtle-pattern.png" alt="Subtle pattern" fill className="object-cover" />
       </div>
       <motion.div 
         ref={ref}
@@ -161,10 +120,9 @@ const Hero: React.FC<HeroProps> = () => {
         <motion.div
           variants={textVariants}
           custom={2}
-          className="flex flex-col sm:flex-row justify-center items-center space-y-4 sm:space-y-0 sm:space-x-4"
+          className="flex justify-center items-center"
         >
           <StartOptimizingButton />
-          <EnhancedGoogleButton />
         </motion.div>
       </motion.div>
       {isLoaded && (

@@ -1,6 +1,7 @@
 import React, { useRef, useEffect } from 'react';
-import { Field, ErrorMessage, useField, useFormikContext } from 'formik';
+import { useField, useFormikContext } from 'formik';
 import { motion, AnimatePresence } from 'framer-motion';
+import { log } from '../../utils/logger';
 
 interface TextInputProps {
   name: string;
@@ -10,8 +11,10 @@ interface TextInputProps {
 }
 
 const TextInput: React.FC<TextInputProps> = ({ name, label, onSubmit, isLastQuestion }) => {
-  const [field, meta] = useField(name);
-  const { setFieldTouched, submitForm, isSubmitting, isValid } = useFormikContext();
+  log('TextInput', 'Component rendered', { name, label, isLastQuestion });
+
+  const [field, meta, helpers] = useField(name);
+  const { submitForm } = useFormikContext();
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -21,9 +24,7 @@ const TextInput: React.FC<TextInputProps> = ({ name, label, onSubmit, isLastQues
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      if (isValid && !isSubmitting) {
-        onSubmit();
-      }
+      submitForm();
     }
   };
 
@@ -36,12 +37,11 @@ const TextInput: React.FC<TextInputProps> = ({ name, label, onSubmit, isLastQues
         whileHover={{ scale: 1.02 }}
         whileTap={{ scale: 0.98 }}
       >
-        <Field
-          innerRef={inputRef}
+        <input
+          ref={inputRef}
           {...field}
           type="text"
           onKeyDown={handleKeyDown}
-          onBlur={() => setFieldTouched(name, true)}
           className={`w-full px-4 py-3 text-lg border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-300 ${
             meta.touched && meta.error ? 'border-red-500' : ''
           }`}
@@ -60,7 +60,7 @@ const TextInput: React.FC<TextInputProps> = ({ name, label, onSubmit, isLastQues
             transition={{ duration: 0.2 }}
             className="text-red-500 text-sm"
           >
-            <ErrorMessage name={name} component="div" />
+            {meta.error}
           </motion.div>
         )}
       </AnimatePresence>

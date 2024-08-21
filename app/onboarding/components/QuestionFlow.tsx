@@ -276,7 +276,7 @@ const QuestionFlow: React.FC<QuestionFlowProps> = ({ onSubmit, isSubmitting }) =
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -50 }}
                 transition={{ duration: 0.3 }}
-                className="bg-white shadow-lg rounded-lg p-8"
+                className="bg-white shadow-lg rounded-lg p-8 min-h-[300px] flex flex-col justify-center"
               >
                 {React.createElement(questions[currentQuestion].component, {
                   name: questions[currentQuestion].name,
