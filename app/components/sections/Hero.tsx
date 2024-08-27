@@ -98,7 +98,7 @@ const Hero: React.FC<HeroProps> = () => {
   }, [controls, inView]);
 
   return (
-    <div className="relative w-full min-h-screen flex items-center justify-center overflow-hidden">
+    <div className="relative w-full min-h-screen flex flex-col items-center justify-center overflow-hidden">
       <Canvas style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', zIndex: -1 }}>
         <NeuralBackgroundAnimation />
       </Canvas>
@@ -161,7 +161,7 @@ const Hero: React.FC<HeroProps> = () => {
         <motion.div
           variants={textVariants}
           custom={2}
-          className="flex flex-col sm:flex-row justify-center items-center space-y-4 sm:space-y-0 sm:space-x-4"
+          className="flex flex-col sm:flex-row justify-center items-center space-y-4 sm:space-y-0 sm:space-x-4 mb-16" // Added mb-16 for extra space
         >
           <StartOptimizingButton />
           <EnhancedGoogleButton />
@@ -169,7 +169,7 @@ const Hero: React.FC<HeroProps> = () => {
       </motion.div>
       {isLoaded && (
         <motion.div
-          className="absolute bottom-10 left-1/2 transform -translate-x-1/2"
+          className="absolute bottom-4 left-0 right-0 text-center" // Changed bottom-10 to bottom-4
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 1 }}

@@ -13,26 +13,29 @@ import { useSwipeable } from 'react-swipeable';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { FirebaseAuthService } from '../services/FirebaseAuthService';
+import '../styles/mobile.css';
+import Head from 'next/head';
+import { animateScroll as scroll } from 'react-scroll';
 
+// Dynamically import SEOMetaTags with SSR disabled
 const SEOMetaTags = dynamic(() => import('../SEOMetaTags'), { ssr: false });
 
 interface SectionComponentProps {
   handleSignIn?: () => void;
 }
 
+// Implement lazy loading for section components
 const sectionComponents = {
-  Hero: lazy(() => import('./sections/Hero').then(module => ({ default: module.default as React.ComponentType<SectionComponentProps> }))),
-  WhatWeDo: lazy(() => import('./sections/WhatWeDo').then(module => ({ default: module.default as React.ComponentType<SectionComponentProps> }))),
-  HowItWorks: lazy(() => import('./sections/HowItWorks').then(module => ({ default: module.default as React.ComponentType<SectionComponentProps> }))),
-  KeyBenefits: lazy(() => import('./sections/KeyBenefits').then(module => ({ default: module.default as React.ComponentType<SectionComponentProps> }))),
-  CreativeAlly: lazy(() => import('./sections/CreativeAlly').then(module => ({ default: module.default as React.ComponentType<SectionComponentProps> }))),
-  PersonalizedInsights: lazy(() => import('./sections/PersonalizedInsights').then(module => ({ default: module.default as React.ComponentType<SectionComponentProps> }))),
-  AIBrandProfile: lazy(() => import('./sections/AIBrandProfile').then(module => ({ default: module.default as React.ComponentType<SectionComponentProps> }))),
-  RealResults: lazy(() => import('./sections/RealResults').then(module => ({ default: module.default as React.ComponentType<SectionComponentProps> }))),
-  CallToAction: lazy(() => import('./sections/CallToAction').then(module => ({ default: module.default as React.ComponentType<SectionComponentProps> }))),
+  Hero: dynamic(() => import('./sections/Hero'), { ssr: true, loading: () => <SkeletonLoader type="hero" /> }),
+  WhatWeDo: dynamic(() => import('./sections/WhatWeDo'), { loading: () => <SkeletonLoader type="section" /> }),
+  HowItWorks: lazy(() => import('./sections/HowItWorks')),
+  KeyBenefits: lazy(() => import('./sections/KeyBenefits')),
+  CreativeAlly: lazy(() => import('./sections/CreativeAlly')),
+  PersonalizedInsights: lazy(() => import('./sections/PersonalizedInsights')),
+  AIBrandProfile: lazy(() => import('./sections/AIBrandProfile')),
+  RealResults: lazy(() => import('./sections/RealResults')),
+  CallToAction: lazy(() => import('./sections/CallToAction')),
 };
-
-const StickyNavigation = lazy(() => import('../StickyNavigation'));
 
 const sections = [
   { Component: sectionComponents.Hero, name: 'Hero' },
@@ -54,26 +57,20 @@ interface SectionWrapperProps {
 
 const SectionWrapper: React.FC<SectionWrapperProps> = React.memo(({ index, children, name }) => {
   const [ref, inView] = useInView({
-    threshold: 0.2,
-    triggerOnce: true,
+    threshold: 0.3,
+    triggerOnce: false,
   });
 
-  const [springProps, api] = useSpring(() => ({
-    opacity: 0,
-    transform: 'translateY(50px)',
-    config: config.slow,
-  }));
-
-  useEffect(() => {
-    if (inView) {
-      api.start({ opacity: 1, transform: 'translateY(0)' });
-    }
-  }, [inView, api]);
+  const springProps = useSpring({
+    opacity: inView ? 1 : 0,
+    transform: `translateY(${inView ? 0 : 50}px)`,
+    config: { mass: 1, tension: 80, friction: 26 },
+  });
 
   return (
-    <Element name={name}>
+    <Element name={name} id={name}>
       <animated.div
-        className={`w-full ${index === 0 ? 'min-h-screen' : 'min-h-[50vh]'} flex items-center justify-center`}
+        className="w-full min-h-screen flex items-center justify-center"
         ref={ref}
         style={springProps}
       >
@@ -88,7 +85,7 @@ const SectionWrapper: React.FC<SectionWrapperProps> = React.memo(({ index, child
 SectionWrapper.displayName = 'SectionWrapper';
 
 const ConsolidatedLandingPageContent: React.FC = () => {
-  const { theme, toggleTheme } = useTheme();
+  const { theme } = useTheme();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [activeSection, setActiveSection] = useState(0);
   const router = useRouter();
@@ -113,8 +110,8 @@ const ConsolidatedLandingPageContent: React.FC = () => {
 
   useEffect(() => {
     const loadHighQualityImages = () => {
-      console.log('Loading high-quality images');
       // Implement actual high-quality image loading logic here
+      // Consider using Intersection Observer for efficient lazy loading
     };
 
     startTransition(() => {
@@ -137,12 +134,35 @@ const ConsolidatedLandingPageContent: React.FC = () => {
   }, []);
 
   const scrollToSection = useCallback((index: number) => {
-    scroller.scrollTo(sections[index].name, {
-      duration: 800,
-      delay: 0,
-      smooth: 'easeInOutQuart'
+    const sectionName = sections[index].name;
+    scroll.scrollTo(document.getElementById(sectionName)?.offsetTop || 0, {
+      duration: 1000,
+      smooth: 'easeInOutQuart',
+      offset: 0
     });
   }, []);
+
+  const handleScroll = useCallback(() => {
+    const scrollPosition = window.scrollY;
+    const windowHeight = window.innerHeight;
+    const newActiveSection = sections.findIndex((_, index) => {
+      const element = document.getElementById(sections[index].name);
+      if (element) {
+        const { offsetTop, offsetHeight } = element;
+        return scrollPosition >= offsetTop - windowHeight / 2 && 
+               scrollPosition < offsetTop + offsetHeight - windowHeight / 2;
+      }
+      return false;
+    });
+    if (newActiveSection !== -1 && newActiveSection !== activeSection) {
+      setActiveSection(newActiveSection);
+    }
+  }, [activeSection]); // Removed 'sections' from the dependency array
+
+  useEffect(() => {
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [handleScroll]);
 
   const handleSwipe = useCallback((direction: 'UP' | 'DOWN') => {
     const newIndex = direction === 'DOWN' ? 
@@ -164,7 +184,10 @@ const ConsolidatedLandingPageContent: React.FC = () => {
       name={name}
     >
       <Component
-        handleSignIn={index === 0 || index === sections.length - 1 ? handleSignIn : undefined}
+        handleSignIn={index === 0 || index === sections.length - 1 ? 
+          () => Promise.resolve(handleSignIn()) : 
+          undefined
+        }
       />
     </SectionWrapper>
   )), [handleSignIn]);
@@ -172,45 +195,34 @@ const ConsolidatedLandingPageContent: React.FC = () => {
   return (
     <ErrorBoundary>
       <div 
-        className={`${theme.darkMode ? 'dark' : ''} overflow-x-hidden`}
+        className="overflow-x-hidden scroll-smooth text-base sm:text-lg md:text-xl mobile-snap-scroll"
         {...swipeHandlers}
       >
+        <Head>
+          <link rel="preload" href="/fonts/your-main-font.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
+          <link rel="preconnect" href="https://your-api-domain.com" />
+        </Head>
         <SEOMetaTags title="Your App Title" description="Your app description goes here" />
-        <div className="bg-gradient-to-r from-blue-600 via-emerald-500 to-orange-500 min-h-screen animate-gradient-x">
-          <div className="w-full backdrop-blur-sm bg-white/30 dark:bg-gray-900/30">
-            {memoizedSections}
-          </div>
-          <Suspense fallback={null}>
-            <StickyNavigation
-              sectionNames={sections.map(s => s.name)}
-              activeIndex={activeSection}
-              onNavClick={scrollToSection}
-            />
-          </Suspense>
+        <div className="relative">
+          {memoizedSections}
+          <div className="fixed top-0 left-0 w-full h-full pointer-events-none z-[-1] bg-gradient-to-r from-blue-600 via-emerald-500 to-orange-500 animate-gradient-x" />
         </div>
-        <button
-          onClick={toggleTheme}
-          className="fixed bottom-4 right-4 bg-gray-200 dark:bg-gray-800 p-2 rounded-full shadow-lg transition-colors duration-200 ease-in-out hover:bg-gray-300 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 z-50"
-          aria-label={`Toggle to ${theme.darkMode ? 'light' : 'dark'} theme`}
-        >
-          {theme.darkMode ? '🌞' : '🌙'}
-        </button>
-        {isAuthenticated ? (
-          <button
-            onClick={handleSignOut}
-            className="fixed top-4 right-4 bg-red-500 text-white p-2 rounded shadow-lg transition-colors duration-200 ease-in-out hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 z-50"
-          >
-            Sign Out
-          </button>
-        ) : (
-          <Link href="/signin">
+        <div className="fixed bottom-4 right-4 z-50 flex flex-col space-y-2">
+          {isAuthenticated ? (
             <button
-              className="fixed top-4 right-4 bg-blue-500 text-white p-2 rounded shadow-lg transition-colors duration-200 ease-in-out hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 z-50"
+              onClick={handleSignOut}
+              className="bg-red-500 text-white p-2 rounded shadow-lg transition-colors duration-200 ease-in-out hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
             >
-              Sign In
+              Sign Out
             </button>
-          </Link>
-        )}
+          ) : (
+            <Link href="/signin" passHref legacyBehavior>
+              <a className="bg-blue-500 text-white p-2 rounded shadow-lg transition-colors duration-200 ease-in-out hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                Sign In
+              </a>
+            </Link>
+          )}
+        </div>
       </div>
     </ErrorBoundary>
   );
