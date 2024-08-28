@@ -14,6 +14,19 @@ import {
   import questionUtils from 'app/utils/questionUtils';
   import { AIContextType } from 'app/contexts/AIContext';
   
+  // Import the RootState type
+  import { RootState } from '../store';
+  
+  // Define an extended RootState type that includes chat and profile
+  interface ExtendedRootState extends RootState {
+    chat: {
+      messages: Message[];
+    };
+    profile: {
+      profile: any; // Replace 'any' with the actual type of your profile
+    };
+  }
+  
   export const addMessage = (message: Message): AddMessageAction => ({
     type: ADD_MESSAGE,
     payload: message,
@@ -36,14 +49,15 @@ import {
         const aiResponse = await aiContext.askQuestion(content);
         dispatch(addMessage({ role: 'ai', content: aiResponse }));
   
-        const { chat, profile: currentProfile } = getState();
+        const state = getState() as ExtendedRootState;
+        const { chat, profile: currentProfile } = state;
         const updatedProfile = await profileUtils.summarizeProfile(
           [...chat.messages, { role: 'user', content }, { role: 'ai', content: aiResponse }],
           aiResponse,
           aiContext
         );
         
-        const mergedProfile = profileUtils.mergeProfiles(currentProfile, updatedProfile);
+        const mergedProfile = profileUtils.mergeProfiles(currentProfile.profile, updatedProfile);
         dispatch(updateProfile(mergedProfile));
   
         const nextQuestion = await questionUtils.generateNextQuestion(chat.messages, mergedProfile);
@@ -57,8 +71,9 @@ import {
   
   export const generateNextQuestion = (): AppThunk<Promise<Question>> => {
     return async (dispatch, getState) => {
-      const { chat, profile } = getState();
-      const nextQuestion = await questionUtils.generateNextQuestion(chat.messages, profile);
+      const state = getState() as ExtendedRootState;
+      const { chat, profile } = state;
+      const nextQuestion = await questionUtils.generateNextQuestion(chat.messages, profile.profile);
       dispatch(updateQuestions([nextQuestion]));
       return nextQuestion;
     };

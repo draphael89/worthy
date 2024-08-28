@@ -120,18 +120,14 @@ const Hero: React.FC = () => {
         <motion.div
           variants={textVariants}
           custom={2}
-<<<<<<< HEAD
-          className="flex flex-col sm:flex-row justify-center items-center space-y-4 sm:space-y-0 sm:space-x-4 mb-16" // Added mb-16 for extra space
-=======
-          className="flex justify-center items-center"
->>>>>>> 9a69114cffdc505cb2286fec9dc240ee94753bd7
+          className="flex flex-col sm:flex-row justify-center items-center space-y-4 sm:space-y-0 sm:space-x-4 mb-16"
         >
           <StartOptimizingButton />
         </motion.div>
       </motion.div>
       {isLoaded && (
         <motion.div
-          className="absolute bottom-4 left-0 right-0 text-center" // Changed bottom-10 to bottom-4
+          className="absolute bottom-4 left-0 right-0 text-center"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 1 }}

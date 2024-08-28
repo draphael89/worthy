@@ -10,6 +10,8 @@ import LoadingSpinner from './LoadingSpinner';
 import { Box, Container, Typography } from '@mui/material';
 import { motion } from 'framer-motion';
 import { ErrorBoundary } from 'react-error-boundary';
+import { ThemeProvider, createTheme } from '@mui/material/styles';
+import { ThemeType, lightTheme, darkTheme, toggleTheme } from '../styles/theme';
 
 // Define a custom type for the user
 interface CustomUser extends User {
@@ -20,6 +22,7 @@ const DashboardContent: React.FC = () => {
   const router = useRouter();
   const [user, setUser] = useState<CustomUser | null>(null);
   const [loading, setLoading] = useState(true);
+  const [currentTheme, setCurrentTheme] = useState<ThemeType>(lightTheme);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
@@ -49,6 +52,17 @@ const DashboardContent: React.FC = () => {
     return () => unsubscribe();
   }, [router]);
 
+  const handleToggleTheme = () => {
+    setCurrentTheme((prevTheme) => toggleTheme(prevTheme));
+  };
+
+  const muiTheme = createTheme({
+    palette: {
+      mode: currentTheme === darkTheme ? 'dark' : 'light',
+      // ... other theme properties
+    },
+  });
+
   if (loading) {
     return <LoadingSpinner />;
   }
@@ -59,23 +73,28 @@ const DashboardContent: React.FC = () => {
 
   return (
     <ErrorBoundary fallback={<ErrorFallback />}>
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.5 }}
-      >
-        <Container maxWidth="xl">
-          <Box my={4}>
-            <Typography variant="h4" component="h1" gutterBottom>
-              Welcome to your Dashboard
-            </Typography>
-            <Typography variant="subtitle1" gutterBottom>
-              Hello, {user.displayName || user.email || 'User'}!
-            </Typography>
-            <Dashboard />
-          </Box>
-        </Container>
-      </motion.div>
+      <ThemeProvider theme={muiTheme}>
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5 }}
+        >
+          <Container maxWidth="xl">
+            <Box my={4}>
+              <Typography variant="h4" component="h1" gutterBottom>
+                Welcome to your Dashboard
+              </Typography>
+              <Typography variant="subtitle1" gutterBottom>
+                Hello, {user.displayName || user.email || 'User'}!
+              </Typography>
+              <Dashboard 
+                darkMode={currentTheme === darkTheme}
+                onToggleTheme={handleToggleTheme}
+              />
+            </Box>
+          </Container>
+        </motion.div>
+      </ThemeProvider>
     </ErrorBoundary>
   );
 };

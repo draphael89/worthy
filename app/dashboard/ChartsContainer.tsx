@@ -8,6 +8,15 @@ import {
 } from './Charts';
 import ViewModeSelector from '../components/ViewModeSelector';
 import { useDashboardContext } from './Dashboard';
+import { AdData, ViewMode, DateRange } from '../types/AdData';
+
+// Update the DashboardContextType interface
+interface DashboardContextType {
+  data: AdData[];
+  viewMode: ViewMode;
+  dateRange: DateRange;
+  setViewMode: (mode: ViewMode) => void;
+}
 
 const ChartsContainer = () => {
   const { viewMode, setViewMode, dateRange } = useDashboardContext();

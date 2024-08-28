@@ -34,6 +34,14 @@ import {
   ChartLabel,
   CustomTooltip,
 } from '../components/RechartsComponents';
+import { DateRange } from '../types/AdData';
+
+// Update the DashboardContextType interface
+interface DashboardContextType {
+  data: AdData[];
+  viewMode: ViewMode;
+  dateRange: DateRange;
+}
 
 const useProcessedData = (
   data: AdData[] = [],

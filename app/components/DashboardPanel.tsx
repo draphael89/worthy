@@ -4,8 +4,9 @@ import { AmountSpentChart, CPMChart, CTRChart, CostPerLinkClickChart, CostPerPur
 import DateRangePicker from './DateRangePicker';
 import ViewModeSelector from './ViewModeSelector';
 import { format, subWeeks, startOfWeek, endOfWeek } from 'date-fns';
+import { DateRange } from '../types/AdData';
 
-const getDefaultDateRange = () => {
+const getDefaultDateRange = (): DateRange => {
   const end = endOfWeek(new Date());
   const start = startOfWeek(subWeeks(end, 3));
   return {
@@ -21,10 +22,10 @@ interface DashboardPanelProps {
 }
 
 const DashboardPanel: React.FC<DashboardPanelProps> = ({ darkMode, minDate, maxDate }) => {
-  const [dateRange, setDateRange] = useState(getDefaultDateRange());
+  const [dateRange, setDateRange] = useState<DateRange>(getDefaultDateRange());
   const [viewMode, setViewMode] = useState<'daily' | 'weekly' | 'monthly'>('weekly');
 
-  const handleDateRangeChange = (newDateRange: { start: string; end: string }) => {
+  const handleDateRangeChange = (newDateRange: DateRange) => {
     setDateRange(newDateRange);
   };
 

@@ -83,6 +83,13 @@ const SummaryStatistic: React.FC<SummaryStatisticProps> = ({ label, value, descr
   );
 };
 
+// Update the RootState interface to include the profile property
+interface ExtendedRootState extends RootState {
+  profile: {
+    profile: any; // Replace 'any' with the actual type of your profile
+  };
+}
+
 const Dashboard: React.FC<DashboardProps> = ({ darkMode }) => {
   const theme = useTheme();
   const [data, setData] = useState<AdData[]>([]);
@@ -91,7 +98,8 @@ const Dashboard: React.FC<DashboardProps> = ({ darkMode }) => {
   const [dateRange, setDateRange] = useState<DateRange>(getDefaultDateRange());
   const [viewMode, setViewMode] = useState<ViewMode>('weekly');
 
-  const profile = useSelector((state: RootState) => state.profile);
+  // Update this line to use the ExtendedRootState type
+  const profile = useSelector((state: ExtendedRootState) => state.profile.profile);
 
   const filterData = useCallback((data: AdData[], range: DateRange): AdData[] => {
     logger('Filtering data', { dateRange: range, dataLength: data.length });
@@ -267,7 +275,11 @@ const Dashboard: React.FC<DashboardProps> = ({ darkMode }) => {
             </Grid>
           </Grid>
           <Grid item xs={12}>
-            <ChartsContainer />
+            <ChartsContainer
+              dateRange={dateRange}
+              viewMode={viewMode}
+              onViewModeChange={setViewMode}
+            />
           </Grid>
           <Grid item xs={12}>
             <Paper elevation={3} sx={{ p: 2 }}>
