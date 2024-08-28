@@ -3,6 +3,8 @@ import { FirebaseAuthService } from '@/services/FirebaseAuthService';
 import OnboardingContent from './OnboardingContent';
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import { useEffect, useState } from 'react';
+import { log } from '../utils/logger';
+import { useRouter } from 'next/router';
 
 interface ExtendedUser {
   uid: string;
@@ -14,40 +16,38 @@ interface ExtendedUser {
 
 export default function OnboardingWrapper() {
   const [user, setUser] = useState<ExtendedUser | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
+  const router = useRouter();
 
   useEffect(() => {
     const auth = getAuth();
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      log('OnboardingWrapper', 'Auth state changed', { user: firebaseUser?.uid });
       if (firebaseUser) {
-        const extendedUser: ExtendedUser = {
-          uid: firebaseUser.uid,
-          displayName: firebaseUser.displayName,
-          email: firebaseUser.email,
-          photoURL: firebaseUser.photoURL,
-        };
-        setUser(extendedUser);
-
+        setUser(firebaseUser);
         const onboardingCompleted = await FirebaseAuthService.hasCompletedOnboarding(firebaseUser.uid);
         if (onboardingCompleted) {
-          redirect('/dashboard');
+          log('OnboardingWrapper', 'Onboarding already completed, redirecting to dashboard');
+          router.push('/dashboard');
         }
       } else {
-        redirect('/login');
+        log('OnboardingWrapper', 'No authenticated user, redirecting to login');
+        router.push('/login');
       }
-      setLoading(false);
+      setIsLoading(false);
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [router]);
 
-  if (loading) {
-    return <div>Loading...</div>; // Or a loading spinner component
+  if (isLoading) {
+    return <div>Loading...</div>;
   }
 
   if (!user) {
-    return null; // This should not happen due to the redirect in useEffect, but TypeScript needs it
+    return null; // The useEffect will redirect to login
   }
 
+  log('OnboardingWrapper', 'Rendering OnboardingContent');
   return <OnboardingContent />;
 }

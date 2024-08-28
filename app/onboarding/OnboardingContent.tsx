@@ -7,10 +7,11 @@ import CoreOnboarding from './components/CoreOnboarding';
 import ExtendedOnboarding from './components/ExtendedOnboarding';
 import GradientBackground from './components/GradientBackground';
 import { motion, AnimatePresence } from 'framer-motion';
-import { getAuth } from 'firebase/auth';
-import { updateOnboardingStatus } from '../actions/auth';
+import { getAuth, onAuthStateChanged } from 'firebase/auth';
+import { updateOnboardingStatus } from '../utils/onboarding';
 import { OnboardingFormValues } from './types';
 import { User } from 'firebase/auth';
+import { log } from '../utils/logger';
 
 const OnboardingContent: React.FC = () => {
   const router = useRouter();
@@ -19,40 +20,68 @@ const OnboardingContent: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
   const [onboardingData, setOnboardingData] = useState<Partial<OnboardingFormValues>>({});
   const [onboardingStage, setOnboardingStage] = useState<'core' | 'extended'>('core');
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const auth = getAuth();
-    setUser(auth.currentUser);
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      setUser(firebaseUser);
+      setIsLoading(false);
+      log('OnboardingContent', 'Auth state changed', { user: firebaseUser?.uid });
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    log('OnboardingContent', 'Component mounted');
+    const auth = getAuth();
     if (auth.currentUser) {
+      log('OnboardingContent', 'User found, fetching profile', { userId: auth.currentUser.uid });
       FirebaseAuthService.getUserProfile(auth.currentUser.uid)
         .then((profile: Partial<OnboardingFormValues> | null) => {
+          log('OnboardingContent', 'User profile fetched', { profile });
           if (profile) {
             setOnboardingData(profile);
             if ('coreOnboardingCompleted' in profile && profile.coreOnboardingCompleted) {
+              log('OnboardingContent', 'Core onboarding completed, setting stage to extended');
               setOnboardingStage('extended');
             }
           }
         })
         .catch((error: Error) => {
-          console.error('Error fetching user profile:', error);
+          log('OnboardingContent', 'Error fetching user profile', { error: error.message });
         });
+    } else {
+      log('OnboardingContent', 'No user found');
     }
   }, []);
 
   const handleCoreSubmit = async (values: Partial<OnboardingFormValues>) => {
+    log('OnboardingContent', 'Handling core submit', { values });
     setIsSubmitting(true);
     setError(null);
 
-    try {
-      if (!user) {
-        throw new Error('No authenticated user found');
-      }
+    if (!user) {
+      log('OnboardingContent', 'No authenticated user found');
+      setError('Please sign in to continue.');
+      setIsSubmitting(false);
+      return;
+    }
 
+    try {
+      log('OnboardingContent', 'Updating user profile with core onboarding data');
       await FirebaseAuthService.updateUserProfile(user.uid, { ...values, coreOnboardingCompleted: true });
+      log('OnboardingContent', 'Core onboarding data saved successfully');
       setOnboardingData(prevData => ({ ...prevData, ...values, coreOnboardingCompleted: true }));
-      setOnboardingStage('extended');
+      
+      // Add this line to update the onboarding status
+      await updateOnboardingStatus(user.uid, true);
+      
+      // Add this line to redirect to the dashboard
+      router.push('/dashboard');
     } catch (error) {
-      console.error('Error submitting core onboarding:', error);
+      log('OnboardingContent', 'Error submitting core onboarding', { error: error instanceof Error ? error.message : String(error) });
       setError('An unexpected error occurred. Please try again.');
     } finally {
       setIsSubmitting(false);
@@ -78,6 +107,14 @@ const OnboardingContent: React.FC = () => {
       setIsSubmitting(false);
     }
   };
+
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
+
+  if (!user) {
+    return <div>Please sign in to continue with onboarding.</div>;
+  }
 
   return (
     <GradientBackground>

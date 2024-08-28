@@ -70,3 +70,14 @@ export type NumericAdDataKey = {
 export type AggregatedAdData = {
     [key: string]: AdData;
 };
+
+export interface User {
+  uid: string;
+  email: string | null;
+  displayName: string | null;
+  photoURL: string | null;
+  metadata: {
+    creationTime: string;
+    lastSignInTime: string;
+  };
+}

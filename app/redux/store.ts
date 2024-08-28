@@ -1,11 +1,9 @@
 import { configureStore, ThunkAction, Action, combineReducers } from '@reduxjs/toolkit';
-import chatReducer from 'app/reducers/chatReducer';
-import profileReducer from 'app/reducers/profileReducer';
+import authReducer from 'app/redux/slices/authSlice';
 
 // Combine all the reducers into one root reducer
 const rootReducer = combineReducers({
-  chat: chatReducer,
-  profile: profileReducer,
+  auth: authReducer,
   // Add other reducers here if needed
 });
 

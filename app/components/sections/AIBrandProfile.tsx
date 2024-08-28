@@ -1,14 +1,15 @@
 import React, { useEffect, useRef, useCallback, useMemo, useState } from 'react';
-import { useSpring, useTrail, animated, config, useSpringRef } from '@react-spring/web';
+import { useSpring, useTrail, animated, config, useSpringRef, SpringValue } from '@react-spring/web';
 import { motion, useAnimation, useReducedMotion } from 'framer-motion';
 import { useInView } from 'react-intersection-observer';
 import { FaUserCircle, FaComments, FaPalette, FaRobot, FaBullseye, FaChartLine } from 'react-icons/fa';
 import Link from 'next/link';
 
-// StartOptimizingButton component
+// StartOptimizingButton component - A button with hover animation
 const StartOptimizingButton: React.FC = () => {
   const [hovered, setHovered] = useState(false);
 
+  // Spring animation for the button
   const buttonSpring = useSpring({
     scale: hovered ? 1.05 : 1,
     boxShadow: hovered ? '0 25px 50px -12px rgba(0, 0, 0, 0.25)' : '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
@@ -29,7 +30,9 @@ const StartOptimizingButton: React.FC = () => {
   );
 };
 
+// Main AIBrandProfile component
 const AIBrandProfile: React.FC = () => {
+  // Intersection observer hook to trigger animations when component is in view
   const [ref, inView] = useInView({
     triggerOnce: true,
     threshold: 0.1,
@@ -39,12 +42,14 @@ const AIBrandProfile: React.FC = () => {
   const controls = useAnimation();
   const gradientApi = useSpringRef();
 
+  // Start animations when component is in view
   useEffect(() => {
     if (inView) {
       controls.start('visible');
     }
   }, [controls, inView]);
 
+  // Gradient animation
   const gradientSpring = useSpring({
     ref: gradientApi,
     from: { backgroundPosition: '0% 50%' },
@@ -57,6 +62,7 @@ const AIBrandProfile: React.FC = () => {
     gradientApi.start();
   }, [gradientApi]);
 
+  // Features data
   const features = useMemo(() => [
     {
       icon: <FaComments className="text-primary-light" size={48} />,
@@ -70,6 +76,7 @@ const AIBrandProfile: React.FC = () => {
     },
   ], []);
 
+  // Benefits data
   const benefits = useMemo(() => [
     {
       icon: <FaRobot className="text-accent-main" size={48} />,
@@ -88,6 +95,7 @@ const AIBrandProfile: React.FC = () => {
     },
   ], []);
 
+  // Animation variants for container
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
@@ -98,6 +106,7 @@ const AIBrandProfile: React.FC = () => {
     },
   };
 
+  // Animation variants for items
   const itemVariants = {
     hidden: { y: 20, opacity: 0 },
     visible: {
@@ -111,11 +120,12 @@ const AIBrandProfile: React.FC = () => {
     },
   };
 
-  const [{ scrollY }, setScrollY] = useSpring(() => ({ scrollY: 0 }));
+  // Scroll animation
+  const [{ scrollY }, api] = useSpring(() => ({ scrollY: 0 }));
 
   const onScroll = useCallback(() => {
-    setScrollY({ scrollY: window.scrollY });
-  }, [setScrollY]);
+    api.start({ scrollY: window.scrollY });
+  }, [api]);
 
   useEffect(() => {
     window.addEventListener('scroll', onScroll);
@@ -124,6 +134,7 @@ const AIBrandProfile: React.FC = () => {
 
   return (
     <section ref={ref} className="relative py-24 overflow-hidden w-full">
+      {/* Animated gradient background */}
       <animated.div 
         style={{
           ...gradientSpring,
@@ -131,8 +142,10 @@ const AIBrandProfile: React.FC = () => {
         }}
         className="absolute inset-0 bg-gradient-to-br from-gray-900 via-hero-gradient-start to-hero-gradient-end" 
       />
+      {/* Background pattern that moves on scroll */}
       <BackgroundPattern scrollY={scrollY} />
       <div className="relative w-full px-4 sm:px-6 lg:px-8 z-10">
+        {/* Main content */}
         <motion.div
           initial="hidden"
           animate={controls}
@@ -191,12 +204,13 @@ const AIBrandProfile: React.FC = () => {
   );
 };
 
-const BackgroundPattern: React.FC<{ scrollY: any }> = ({ scrollY }) => (
+// BackgroundPattern component - Creates a moving background pattern
+const BackgroundPattern: React.FC<{ scrollY: SpringValue<number> }> = ({ scrollY }) => (
   <animated.svg 
     className="absolute inset-0 w-full h-full" 
     xmlns="http://www.w3.org/2000/svg"
     style={{
-      transform: scrollY.to((y: number) => `translateY(${y * 0.2}px)`),
+      transform: scrollY.to(y => `translateY(${y * 0.2}px)`),
     }}
   >
     <defs>
@@ -208,6 +222,7 @@ const BackgroundPattern: React.FC<{ scrollY: any }> = ({ scrollY }) => (
   </animated.svg>
 );
 
+// AIBrandGuardian component - Animated brand guardian representation
 const AIBrandGuardian: React.FC = () => {
   const [{ y }, set] = useSpring(() => ({ y: 0 }));
   
@@ -260,12 +275,14 @@ const AIBrandGuardian: React.FC = () => {
   );
 };
 
+// Interface for FeatureItem and BenefitItem props
 interface ItemProps {
   icon: React.ReactNode;
   title: string;
   description: string;
 }
 
+// FeatureItem component - Displays individual features with animations
 const FeatureItem: React.FC<ItemProps> = ({ icon, title, description }) => {
   const [hovered, setHovered] = React.useState(false);
 
@@ -308,6 +325,7 @@ const FeatureItem: React.FC<ItemProps> = ({ icon, title, description }) => {
   );
 };
 
+// BenefitItem component - Displays individual benefits with animations
 const BenefitItem: React.FC<ItemProps> = ({ icon, title, description }) => {
   return (
     <motion.div

@@ -6,15 +6,19 @@ import ProgressBar from './ProgressBar';
 import TextInput from './TextInput';
 import SelectInput from './SelectInput';
 import NumberInput from './NumberInput';
+import CheckboxGroup from './CheckboxGroup';
 import { OnboardingFormValues, QuestionConfig } from '../types';
+import { log } from '../../utils/logger';
 
 interface CoreOnboardingProps {
-  onSubmit: (values: OnboardingFormValues) => Promise<void>;
+  onSubmit: (values: Partial<OnboardingFormValues>) => Promise<void>;
   isSubmitting: boolean;
   initialValues: Partial<OnboardingFormValues>;
 }
 
 const CoreOnboarding: React.FC<CoreOnboardingProps> = ({ onSubmit, isSubmitting, initialValues }) => {
+  log('CoreOnboarding', 'Component rendered', { isSubmitting, initialValues });
+
   const [currentQuestion, setCurrentQuestion] = useState(0);
 
   const coreQuestions: QuestionConfig[] = [
@@ -46,6 +50,18 @@ const CoreOnboarding: React.FC<CoreOnboardingProps> = ({ onSubmit, isSubmitting,
       label: 'What is your monthly advertising spend?', 
       component: NumberInput
     },
+    {
+      name: 'adChannels',
+      label: 'Which advertising channels do you use?',
+      component: CheckboxGroup,
+      options: [
+        { value: 'search', label: 'Search' },
+        { value: 'social', label: 'Social Media' },
+        { value: 'display', label: 'Display' },
+        { value: 'video', label: 'Video' },
+        { value: 'other', label: 'Other' },
+      ]
+    },
     { 
       name: 'primaryGoal', 
       label: 'What is your primary advertising goal?', 
@@ -70,6 +86,7 @@ const CoreOnboarding: React.FC<CoreOnboardingProps> = ({ onSubmit, isSubmitting,
       .required('Website is required'),
     industry: Yup.string().required('Industry is required'),
     adSpend: Yup.number().positive('Ad spend must be a positive number').required('Ad spend is required'),
+    adChannels: Yup.array().min(1, 'Please select at least one advertising channel'),
     primaryGoal: Yup.string().required('Primary goal is required'),
   });
 
@@ -81,10 +98,21 @@ const CoreOnboarding: React.FC<CoreOnboardingProps> = ({ onSubmit, isSubmitting,
     setCurrentQuestion(prev => Math.max(prev - 1, 0));
   };
 
+  const formInitialValues: Partial<OnboardingFormValues> = {
+    companyName: initialValues.companyName || '',
+    website: initialValues.website || '',
+    industry: initialValues.industry || '',
+    adSpend: initialValues.adSpend || 0,
+    adChannels: initialValues.adChannels || [],
+    primaryGoal: initialValues.primaryGoal || '',
+  };
+
   return (
     <Formik
-      initialValues={initialValues as OnboardingFormValues}
-      validationSchema={validationSchema}
+      initialValues={formInitialValues}
+      validationSchema={Yup.object().shape({
+        [coreQuestions[currentQuestion].name]: validationSchema.fields[coreQuestions[currentQuestion].name as keyof typeof validationSchema.fields]
+      })}
       onSubmit={async (values, { setSubmitting }) => {
         if (currentQuestion === coreQuestions.length - 1) {
           await onSubmit(values);
@@ -93,50 +121,60 @@ const CoreOnboarding: React.FC<CoreOnboardingProps> = ({ onSubmit, isSubmitting,
         }
         setSubmitting(false);
       }}
+      validateOnChange={true}
+      validateOnBlur={true}
     >
-      {({ values, errors, touched, isValid }) => (
-        <Form className="max-w-2xl mx-auto">
-          <div className="mb-8">
-            <ProgressBar currentStep={currentQuestion + 1} totalSteps={coreQuestions.length} />
-          </div>
-          
-          <AnimatePresence mode="wait">
-            {currentQuestion < coreQuestions.length && (
-              <motion.div
-                key={currentQuestion}
-                initial={{ opacity: 0, x: 50 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -50 }}
-                transition={{ duration: 0.3 }}
-                className="bg-white shadow-lg rounded-lg p-8"
-              >
-                {React.createElement(coreQuestions[currentQuestion].component, {
-                  name: coreQuestions[currentQuestion].name,
-                  label: coreQuestions[currentQuestion].label,
-                  options: coreQuestions[currentQuestion].options,
-                  onSubmit: handleNextQuestion,
-                  isLastQuestion: currentQuestion === coreQuestions.length - 1,
-                })}
-              </motion.div>
-            )}
-          </AnimatePresence>
+      {({ values, errors, touched, isValid, submitForm }) => {
+        log('CoreOnboarding', 'Formik render props', { 
+          values, 
+          errors, 
+          touched, 
+          isValid,
+          adChannels: values.adChannels 
+        });
+        
+        return (
+          <Form className="max-w-2xl mx-auto">
+            <div className="mb-8">
+              <ProgressBar currentStep={currentQuestion + 1} totalSteps={coreQuestions.length} />
+            </div>
+            
+            <AnimatePresence mode="wait">
+              {currentQuestion < coreQuestions.length && (
+                <motion.div
+                  key={currentQuestion}
+                  initial={{ opacity: 0, x: 50 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -50 }}
+                  transition={{ duration: 0.3 }}
+                  className="bg-white shadow-lg rounded-lg p-8"
+                >
+                  {React.createElement(coreQuestions[currentQuestion].component, {
+                    name: coreQuestions[currentQuestion].name,
+                    label: coreQuestions[currentQuestion].label,
+                    options: coreQuestions[currentQuestion].options,
+                    onSubmit: submitForm,
+                    isLastQuestion: currentQuestion === coreQuestions.length - 1,
+                  })}
+                </motion.div>
+              )}
+            </AnimatePresence>
 
-          <div className="mt-8 flex justify-between">
-            {currentQuestion > 0 && (
+            <div className="mt-8 flex justify-between">
+              {currentQuestion > 0 && (
+                <motion.button
+                  type="button"
+                  onClick={handlePreviousQuestion}
+                  className="px-6 py-3 text-sm font-medium text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-gray-500 transition-colors duration-200"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  Previous
+                </motion.button>
+              )}
               <motion.button
                 type="button"
-                onClick={handlePreviousQuestion}
-                className="px-6 py-3 text-sm font-medium text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-gray-500 transition-colors duration-200"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                Previous
-              </motion.button>
-            )}
-            {currentQuestion < coreQuestions.length - 1 ? (
-              <motion.button
-                type="button"
-                onClick={handleNextQuestion}
+                onClick={submitForm}
                 disabled={!isValid || isSubmitting}
                 className={`px-6 py-3 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-500 transition-colors duration-200 ${
                   (!isValid || isSubmitting) ? 'opacity-50 cursor-not-allowed' : ''
@@ -144,24 +182,12 @@ const CoreOnboarding: React.FC<CoreOnboardingProps> = ({ onSubmit, isSubmitting,
                 whileHover={{ scale: isSubmitting ? 1 : 1.05 }}
                 whileTap={{ scale: isSubmitting ? 1 : 0.95 }}
               >
-                {isSubmitting ? 'Submitting...' : 'Next'}
+                {isSubmitting ? 'Submitting...' : currentQuestion === coreQuestions.length - 1 ? 'Submit' : 'Next'}
               </motion.button>
-            ) : (
-              <motion.button
-                type="submit"
-                disabled={!isValid || isSubmitting}
-                className={`px-6 py-3 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-green-500 transition-colors duration-200 ${
-                  (!isValid || isSubmitting) ? 'opacity-50 cursor-not-allowed' : ''
-                }`}
-                whileHover={{ scale: isSubmitting ? 1 : 1.05 }}
-                whileTap={{ scale: isSubmitting ? 1 : 0.95 }}
-              >
-                {isSubmitting ? 'Submitting...' : 'Complete Core Onboarding'}
-              </motion.button>
-            )}
-          </div>
-        </Form>
-      )}
+            </div>
+          </Form>
+        );
+      }}
     </Formik>
   );
 };
